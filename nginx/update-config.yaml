@@ -1,0 +1,24 @@
+---
+- hosts: server
+  # https://www.redhat.com/sysadmin/ansible-podman-container-deployment
+  handlers:
+      - name: restart nginx
+        command: podman exec nginx nginx -s reload
+
+  tasks:
+    - name: Copy file with owner and permissions
+      copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        owner: rock
+        group: rock
+        mode: 0644
+      with_items:
+        - src: v2_nginx_domain.conf
+          dest: /home/rock/hassio/nginx/conf.d/v2_{{nginx_domain}}.conf
+        - src: www_nginx_domain.conf
+          dest: /home/rock/hassio/nginx/conf.d/www_{{nginx_domain}}.conf
+        - src: default.conf
+          dest: /home/rock/hassio/nginx/conf.d/default.conf
+      notify:
+        - restart nginx

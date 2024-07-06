@@ -1,0 +1,167 @@
+---
+- name: Rock5b setup
+  hosts: server
+  become: yes
+  vars:
+    time_zone: 'America/Argentina/Buenos_Aires'
+    user: rock
+    home_disk: bd84725a-c54e-4980-9bd7-98106b5b45b0
+  vars_files:
+    - ../secrets.yml
+  
+  handlers:
+    - name: update timezone
+      command: dpkg-reconfigure --frontend noninteractive tzdata
+
+    - name: reload udev
+      shell: udevadm control --reload-rules && udevadm trigger
+
+    - name: reload mpd
+      systemd:
+        name: mpd
+        state: restarted
+        enabled: yes
+
+  tasks:
+    - name: Ensure sing Key is present for ppa repository
+      apt_key:
+        url: https://gerulrich.github.io/packages/KEY.gpg
+        state: present
+
+    - name: Ensure ppa repository are present
+      apt_repository:
+        repo: deb https://gerulrich.github.io/packages/debian/bullseye/ /
+        state: present
+        update_cache: yes
+    
+    - name: Ensure packages are installed
+      apt:
+        name:
+          - podman
+          - conmon
+          - runc
+          - mpd
+          - dialog
+          - btrfs-progs
+          - crun
+          - iptables
+          - libassuan0
+          - libbtrfs0
+          - libc6
+          - libdevmapper1.02.1
+          - libglib2.0-0
+          - libgpgme11
+          - libgpg-error0
+          - libprotobuf23
+          - libprotobuf-c1
+          - libseccomp2
+          - libselinux1
+          - libsystemd0
+          - pkg-config
+          - uidmap
+          - dbus-user-session
+          - slirp4netns
+          - fuse-overlayfs
+          - net-tools
+          - jq
+          - acl
+          - mc
+          - mosquitto-clients
+          - mpd          
+        state: present    
+    
+    - name: Copy mpd config file
+      copy:
+        src: "../config/mpd/mpd.conf"
+        dest: "/etc/mpd.conf"
+        mode: 0644
+      notify:
+        - reload mpd
+
+    - name: check current timezone
+      shell: cat /etc/timezone
+      changed_when: current_zone.stdout != time_zone
+      register: current_zone
+    
+    - name: Set timezone variables
+      copy: content={{time_zone}}
+            dest=/etc/timezone
+            owner=root
+            group=root
+            mode=0644
+            backup=yes
+      when: current_zone.stdout != time_zone
+      notify:
+        - update timezone
+    
+    - name: Crear rule para el dongle usb zigbee
+      copy:
+        content: 'SUBSYSTEM=="tty", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60", ATTRS{serial}=="caf0d9296bd9eb11be29148e6fe9f4d9", SYMLINK="ttyUSB.CP210", OWNER="{{ user }}"'
+        dest: "/etc/udev/rules.d/99-usb-serial.rules"
+        mode: 0644
+      notify:
+        - reload udev
+
+    - name: Crear rule para rkmpp encoders
+      copy:
+        content: |
+          ACTION=="add", KERNEL=="rga", OWNER="{{ user }}", GROUP="video", MODE="0660"
+          ACTION=="add", KERNEL=="mpp_service", OWNER="{{ user }}", GROUP="video", MODE="0660"
+        dest: "/etc/udev/rules.d/98-rkmpp-encoders.rules"
+        mode: 0644
+      notify:
+        - reload udev
+
+    - name: Check if disk is defined in fstab
+      shell: grep -q "UUID={{ home_disk }}" /etc/fstab
+      register: disk_defined
+
+    - name: Add disk to fstab
+      lineinfile:
+        path: /etc/fstab
+        line: >-
+          UUID=bd84725a-c54e-4980-9bd7-98106b5b45b0 /home ext4 defaults 0 2
+      when: disk_defined.rc != 0
+
+    - name: Ensure directory tree is created
+      file:
+        path: "/home/{{ user }}/{{ item }}"
+        state: directory
+        owner: "{{ user }}"
+        mode: '0755'
+      with_items:
+        - media/music
+        - media/movies
+        - media/images
+        - media/tv
+        - hassio
+        - backup
+        - bin
+
+    - name: Ensure scripts are copied into bin directory
+      copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        mode: 0755
+        owner: "{{ user }}"
+      with_items:
+        - src: ../scripts/tools/flash-zigbee-dongle.sh
+          dest: /home/{{ user }}/bin/flash-zigbee-dongle.sh
+        - src: ../scripts/tools/rock5b-info.sh
+          dest: /home/{{ user }}/bin/system-info.sh
+        - src: ../scripts/tools/mqtt-send.sh
+          dest: /home/{{ user }}/bin/mqtt-send.sh
+        - src: ../scripts/tools/torrent-download-finished.sh
+          dest: /home/{{ user }}/bin/torrent-download-finished.sh
+
+    - name: Copy mqtt-send.sh file with pass
+      template:
+        src: ../scripts/tools/mqtt-send.sh
+        dest: /home/{{ user }}/bin/mqtt-send.sh
+        mode: 0644
+
+      # TODO
+      # enable linger
+      # install ffmpeg with rkmpp
+      # Fan control
+      # systemd-resolved, dns etc.

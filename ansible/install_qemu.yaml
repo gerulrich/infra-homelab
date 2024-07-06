@@ -1,0 +1,74 @@
+---
+- name: Install qemu on server
+  hosts: server
+  become: yes
+  vars:
+    user: rock
+
+  tasks:
+    - name: Ensure pakage list is updated
+      apt:
+        update_cache: yes
+
+    - name: Ensure qemu is installed
+      apt:
+        name:
+          - qemu
+          - qemu-kvm
+          - qemu-utils
+          - qemu-system
+          - qemu-system-arm
+          - qemu-efi-aarch64
+          - virtinst
+          - libvirt-clients
+          - libvirt-daemon
+          - libvirt-daemon-system
+          - libvirt-daemon-driver-qemu
+          - libvirt-daemon-config-network
+          # - libvirtd
+          # - bridge-utils
+          # - containernetworking-plugins
+        state: present
+        install_recommends: no
+
+    - name: Add user to group libvirt
+      user:
+        name: "{{ user }}"
+        groups:
+          - libvirt
+          - kvm
+        append: yes
+
+    - name: Ensure ssh keys are copied
+      copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        owner: "{{ user}}"
+        group: "{{ user }}"
+        mode: 0600
+      with_items:
+        - src: ../keys/homelab_ubuntu_vm
+          dest: /home/{{ user }}/qemu/keys/homelab_ubuntu_vm
+        - src: ../keys/homelab_ubuntu_vm.pub
+          dest: /home/{{ user }}/qemu/keys/homelab_ubuntu_vm.pub
+
+    - name: Ensure qemu scripts are present
+      copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        mode: 0755
+      with_items:
+        - src: ../scripts/vm/vm-create-qemu.sh
+          dest: /usr/local/bin/vm-create-qemu.sh
+        - src: ../scripts/vm/vm-delete-qemu.sh
+          dest: /usr/local/bin/vm-delete-qemu.sh
+        - src: ../scripts/vm/vm-info-qemu.sh
+          dest: /usr/local/bin/vm-info-qemu.sh
+        - src: ../scripts/vm/vm-list-qemu.sh
+          dest: /usr/local/bin/vm-list-qemu.sh
+        - src: ../scripts/vm/vm-shutdown-qemu.sh
+          dest: /usr/local/bin/vm-shutdown-qemu.sh
+        - src: ../scripts/vm/vm-startup-qemu.sh
+          dest: /usr/local/bin/vm-startup-qemu.sh
+        - src: ../scripts/vm/vm-reboot-qemu.sh
+          dest: /usr/local/bin/vm-reboot-qemu.sh
