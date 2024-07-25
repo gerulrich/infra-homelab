@@ -1,0 +1,32 @@
+[Unit]
+Description=transmission in a container
+Documentation=man:podman-generate-systemd(1)
+Wants=network-online.target
+After=network-online.target
+RequiresMountsFor=%t/containers
+
+[Service]
+Environment=PODMAN_SYSTEMD_UNIT=%n TZ=America/Argentina/Buenos_Aires
+Restart=on-failure
+TimeoutStopSec=70
+ExecStart=/usr/local/bin/podman run --name=transmission \
+  --group-add keep-groups \
+  --cidfile=%t/%n.ctr-id \
+  --cgroups=no-conmon \
+  --sdnotify=conmon \
+  --replace --detach \
+  -p 9091:9091 \
+  -p 51413:51413 \
+  -p 51413:51413/udp \
+  --label "io.containers.autoupdate=registry" \
+  -v /home/{{ user }}/hassio/transmission:/config \
+  -v /home/{{ user }}/media:/downloads \
+  -e TZ=America/Argentina/Buenos_Aires \
+  lscr.io/linuxserver/transmission
+ExecStop=/usr/local/bin/podman stop --ignore -t 10 --cidfile=%t/%n.ctr-id
+ExecStopPost=/usr/local/bin/podman rm -f --ignore -t 10 --cidfile=%t/%n.ctr-id
+Type=notify
+NotifyAccess=all
+
+[Install]
+WantedBy=default.target

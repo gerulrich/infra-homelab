@@ -1,0 +1,34 @@
+[Unit]
+Description=frigate in a container
+Documentation=man:podman-generate-systemd(1)
+Wants=network-online.target
+After=network-online.target
+RequiresMountsFor=%t/containers
+
+[Service]
+Environment=PODMAN_SYSTEMD_UNIT=%n TZ=America/Argentina/Buenos_Aires
+Restart=on-failure
+TimeoutStopSec=70
+ExecStart=/usr/local/bin/podman run --name frigate \
+  --cidfile=%t/%n.ctr-id \
+  --cgroups=no-conmon \
+  --sdnotify=conmon \
+  --replace --detach \
+  --mount type=tmpfs,target=/tmp/cache,tmpfs-size=1000000000 \
+  --shm-size=64m \
+  -v /home/{{ user }}/hassio/frigate/storage:/media/frigate \
+  -v /home/{{ user }}/hassio/frigate/config:/config \
+  -v /etc/localtime:/etc/localtime:ro \
+  -e FRIGATE_RTSP_PASSWORD='password' \
+  -p 5000:5000 \
+  -p 8554:8554 \
+  -p 8555:8555/tcp \
+  -p 8555:8555/udp \
+  ghcr.io/blakeblackshear/frigate:stable-rk
+ExecStop=/usr/local/bin/podman stop --ignore -t 10 --cidfile=%t/%n.ctr-id
+ExecStopPost=/usr/local/bin/podman rm -f --ignore -t 10 --cidfile=%t/%n.ctr-id
+Type=notify
+NotifyAccess=all
+
+[Install]
+WantedBy=default.target
