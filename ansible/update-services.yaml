@@ -1,0 +1,243 @@
+---
+- name: Install services
+  hosts: server
+  vars:
+    user: rock
+  vars_files:
+    - ../secrets.yml
+  handlers:
+    - name: systemctl reload config
+      command: systemctl --user daemon-reload
+    
+    - name: restart cloudflare
+      systemd_service: name=cloudflare state=restarted scope=user enabled=true
+    
+    - name: restart certbot
+      systemd_service: name=certbot state=restarted scope=user enabled=true
+    
+    - name: restart certbot.timer
+      systemd_service: name=certbot.timer state=restarted scope=user enabled=true
+
+    - name: restart nginx
+      systemd_service: name=nginx state=restarted scope=user enabled=true
+
+    - name: restart mqtt
+      systemd_service: name=mqtt state=restarted scope=user enabled=true
+
+    - name: restart pihole
+      systemd_service: name=pihole state=restarted scope=user enabled=true
+    
+    - name: restart zigbee
+      systemd_service: name=zigbee state=restarted scope=user enabled=true
+    
+    - name: restart homeassistant
+      systemd_service: name=homeassistant state=restarted scope=user enabled=true
+
+    - name: restart nodered
+      systemd_service: name=nodered state=restarted scope=user enabled=true
+  
+    - name: restart esphome
+      systemd_service: name=esphome state=restarded scope=user enabled=true 
+      
+    - name: restart plex
+      systemd_service: name=plex state=restarded scope=user enabled=true
+
+    - name: restart ledfx
+      systemd_service: name=ledfx state=restarded scope=user enabled=true
+
+    - name: restart vaultwarden
+      systemd_service: name=vaultwarden state=restarded scope=user enabled=true
+
+    - name: restart guacamole
+      systemd_service: name=guacamole state=restarded scope=user enabled=true
+
+    - name: restart mongo
+      systemd_service: name=mongo state=restarded scope=user enabled=true
+
+    - name: restart mongo-express
+      systemd_service: name=mongo-express state=restarded scope=user enabled=true
+
+    - name: restart mqtt-explorer
+      systemd_service: name=mqtt-explorer state=restarded scope=user enabled=false
+
+  tasks:
+    #######################################
+    ########### Infrastructure ############
+    #######################################
+    - name: Ensure cloudflare service is present
+      template:
+        src: ../config/services/cloudflare.service
+        dest: /home/{{ user }}/.config/systemd/user/cloudflare.service
+        mode: 0644
+      notify:
+        - systemctl reload config
+        - restart cloudflare
+
+    - name: Ensure certbot service and timer is present
+      template:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        mode: 0644
+      with_items:
+        - src: ../config/services/certbot.service
+          dest: /home/{{ user }}/.config/systemd/user/certbot.service
+        - src: ../config/services/certbot.timer
+          dest: /home/{{ user }}/.config/systemd/user/certbot.timer
+      notify:
+        - systemctl reload config
+        - restart certbot
+        - restart certbot.timer
+
+    - name: Ensure nginx service is present
+      template:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        mode: 0644
+      with_items:
+        - src: ../config/services/nginx.service
+          dest: /home/{{ user }}/services/nginx.service
+        - src: ../config/nginx/default.conf
+          dest: /home/{{ user }}/hassio/nginx/conf.d/default.conf
+        - src: ../config/nginx/domain_config.conf
+          dest: /home/{{ user }}/hassio/nginx/conf.d/{{ nginx_domain }}.conf
+      notify:
+        - systemctl reload config
+        - restart nginx
+
+    - name: Ensure mqtt service is present
+      template:
+        src: ../config/services/mqtt.service
+        dest: /home/{{ user }}/.config/systemd/user/mqtt.service
+        mode: 0644
+      notify:
+        - systemctl reload config
+        - restart mqtt
+
+    - name: Ensure pihole service is present
+      template:
+        src: ../config/services/pihole.service
+        dest: /home/{{ user }}/.config/systemd/user/pihole.service
+        mode: 0644
+      notify:
+        - systemctl reload config
+        - restart pihole
+
+    #######################################
+    ########### Home Automation ###########
+    #######################################
+    - name: Ensure zigbee service is present
+      template:
+        src: ../config/services/zigbee.service
+        dest: /home/{{ user }}/.config/systemd/user/zigbee.service
+        mode: 0644
+      notify:
+        - systemctl reload config
+        - restart zigbee
+
+    - name: Ensure homeassistant service is present
+      template:
+        src: ../config/services/homeassistant.service
+        dest: /home/{{ user }}/.config/systemd/user/homeassistant.service
+        mode: 0644
+      notify:
+        - systemctl reload config
+        - restart homeassistant
+
+    - name: Ensure nodered service is present
+      template:
+        src: ../config/services/nodered.service
+        dest: /home/{{ user }}/.config/systemd/user/nodered.service
+        mode: 0644
+      notify:
+        - systemctl reload config
+        - restart nodered
+
+    - name: Ensure esphome service is present
+      template:
+        src: ../config/services/esphome.service
+        dest: /home/{{ user }}/.config/systemd/user/esphome.service
+        mode: 0644
+      notify:
+        - systemctl reload config
+        - restart esphome
+
+    #######################################
+    ############# Multimedia ##############
+    #######################################
+    - name: Ensure plex service is present
+      template:
+        src: ../config/services/plex.service
+        dest: /home/{{ user }}/.config/systemd/user/plex.service
+        mode: 0644
+      notify:
+        - systemctl reload config
+        - restart plex
+
+    - name: Ensure transmission service is present
+      template:
+        src: ../config/services/transmission.service
+        dest: /home/{{ user }}/.config/systemd/user/transmission.service
+        mode: 0644
+      notify:
+        - systemctl reload config
+        - restart plex
+
+    - name: Ensure ledfx service is present
+      template:
+        src: ../config/services/ledfx.service
+        dest: /home/{{ user }}/.config/systemd/user/ledfx.service
+        mode: 0644
+      notify:
+        - systemctl reload config
+        - restart ledfx
+
+    #######################################
+    ###### Security - Remote Access #######
+    #######################################
+    - name: Ensure vaultwarden service is present
+      copy:
+        src: ../config/services/vaultwarden.service
+        dest: /home/{{ user }}/.config/systemd/user/vaultwarden.service
+        mode: 0644
+      notify:
+        - systemctl reload config
+        - restart vaultwarden
+    
+    - name: Ensure guacamole service is present
+      template:
+        src: ../config/services/guacamole.service
+        dest: /home/{{ user }}/.config/systemd/user/guacamole.service
+        mode: 0644
+      notify:
+        - systemctl reload config
+        - restart guacamole
+
+    #######################################
+    ########## Database - Others ##########
+    #######################################
+    - name: Ensure mongo service is present
+      template:
+        src: ../config/services/mongo.service
+        dest: /home/{{ user }}/.config/systemd/user/mongo.service
+        mode: 0644
+      notify:
+        - systemctl reload config
+        - restart mongo
+
+    - name: Ensure mongo-express service is present
+      template:
+        src: ../config/services/mongo-express.service
+        dest: /home/{{ user }}/.config/systemd/user/mongo-express.service
+        mode: 0644
+      notify:
+        - systemctl reload config
+        - restart mongo-express
+
+    - name: Ensure mqtt-explorer service is present
+      template:
+        src: ../config/services/mqtt-explorer.service
+        dest: /home/{{ user }}/.config/systemd/user/mqtt-explorer.service
+        mode: 0644
+      notify:
+        - systemctl reload config
+        - restart mqtt-explorer

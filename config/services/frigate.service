@@ -19,7 +19,7 @@ ExecStart=/usr/local/bin/podman run --name frigate \
   -v /home/{{ user }}/hassio/frigate/storage:/media/frigate \
   -v /home/{{ user }}/hassio/frigate/config:/config \
   -v /etc/localtime:/etc/localtime:ro \
-  -e FRIGATE_RTSP_PASSWORD='password' \
+  -e FRIGATE_RTSP_PASSWORD='{{frigate_rtsp_pass}}' \
   -p 5000:5000 \
   -p 8554:8554 \
   -p 8555:8555/tcp \
