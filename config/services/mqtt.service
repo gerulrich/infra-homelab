@@ -18,6 +18,7 @@ ExecStart=/usr/local/bin/podman run --name mqtt \
   --label "io.containers.autoupdate=registry" \
   --network host \
   -p 1883:1883 \
+  --userns keep-id --group-add keep-groups \
   --volume=/home/{{ user }}/hassio/mqtt/config:/mosquitto/config:Z \
   --volume=/home/{{ user }}/hassio/mqtt/data:/mosquitto/data:Z \
   --volume=/home/{{ user }}/hassio/mqtt/log:/mosquitto/log:Z \

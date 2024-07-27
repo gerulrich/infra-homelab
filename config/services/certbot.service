@@ -16,7 +16,6 @@ ExecStart=/usr/local/bin/podman run --name certbot \
   --cidfile=%t/%n.ctr-id \
   --cgroups=no-conmon \
   --sdnotify=conmon \
-  -a stdout -a stderr \
   --replace --detach \
   --label "io.containers.autoupdate=registry" \
   -e TZ=America/Argentina/Buenos_Aires \

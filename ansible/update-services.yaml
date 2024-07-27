@@ -64,6 +64,13 @@
     #######################################
     ########### Infrastructure ############
     #######################################
+    - name: Ensure hassio folder is present
+      file:
+        path: "/home/{{ user }}/hassio/"
+        state: directory
+        owner: "{{ user }}"
+        mode: '0755'    
+    
     - name: Ensure cloudflare service is present
       template:
         src: ../config/services/cloudflare.service
@@ -72,6 +79,17 @@
       notify:
         - systemctl reload config
         - restart cloudflare
+
+    - name: Ensure certbot folder is present
+      file:
+        path: "/home/{{ user }}/hassio/certbot/{{ item }}"
+        state: directory
+        owner: "{{ user }}"
+        mode: '0755'
+      with_items:
+        - conf
+        - logs
+        - www
 
     - name: Ensure certbot service and timer is present
       template:
@@ -87,6 +105,16 @@
         - systemctl reload config
         - restart certbot
         - restart certbot.timer
+
+    - name: Ensure nginx folder is present
+      file:
+        path: "/home/{{ user }}/hassio/nginx/{{ item }}"
+        state: directory
+        owner: "{{ user }}"
+        mode: '0755'
+      with_items:
+        - conf.d
+        - www
 
     - name: Ensure nginx service is present
       template:
@@ -104,6 +132,17 @@
         - systemctl reload config
         - restart nginx
 
+    - name: Ensure mqtt folder is present
+      file:
+        path: "/home/{{ user }}/hassio/mqtt/{{ item }}"
+        state: directory
+        owner: "{{ user }}"
+        mode: '0755'
+      with_items:
+        - config
+        - data
+        - log
+
     - name: Ensure mqtt service is present
       template:
         src: ../config/services/mqtt.service
@@ -112,6 +151,16 @@
       notify:
         - systemctl reload config
         - restart mqtt
+
+    - name: Ensure pihole folder is present
+      file:
+        path: "/home/{{ user }}/hassio/pihole/{{ item }}"
+        state: directory
+        # owner: "{{ user }}"
+        # mode: '0755'
+      with_items:
+        - config
+        - dnsmasq
 
     - name: Ensure pihole service is present
       template:
@@ -125,6 +174,13 @@
     #######################################
     ########### Home Automation ###########
     #######################################
+    - name: Ensure zigbee folder is present
+      file:
+        path: "/home/{{ user }}/hassio/zigbee2mqtt"
+        state: directory
+        owner: "{{ user }}"
+        mode: '0755'
+
     - name: Ensure zigbee service is present
       template:
         src: ../config/services/zigbee.service
@@ -133,6 +189,13 @@
       notify:
         - systemctl reload config
         - restart zigbee
+
+    - name: Ensure homeassistant folder is present
+      file:
+        path: "/home/{{ user }}/hassio/homeassistant"
+        state: directory
+        owner: "{{ user }}"
+        mode: '0755'
 
     - name: Ensure homeassistant service is present
       template:
@@ -143,6 +206,13 @@
         - systemctl reload config
         - restart homeassistant
 
+    - name: Ensure nodered folder is present
+      file:
+        path: "/home/{{ user }}/hassio/nodered"
+        state: directory
+        owner: "{{ user }}"
+        mode: '0755'
+
     - name: Ensure nodered service is present
       template:
         src: ../config/services/nodered.service
@@ -151,6 +221,13 @@
       notify:
         - systemctl reload config
         - restart nodered
+
+    - name: Ensure esphome folder is present
+      file:
+        path: "/home/{{ user }}/hassio/esphome"
+        state: directory
+        owner: "{{ user }}"
+        mode: '0755'
 
     - name: Ensure esphome service is present
       template:
@@ -164,6 +241,13 @@
     #######################################
     ############# Multimedia ##############
     #######################################
+    - name: Ensure plex folder is present
+      file:
+        path: "/home/{{ user }}/hassio/plex"
+        state: directory
+        # owner: "{{ user }}"
+        # mode: '0755'
+
     - name: Ensure plex service is present
       template:
         src: ../config/services/plex.service
@@ -173,6 +257,13 @@
         - systemctl reload config
         - restart plex
 
+    - name: Ensure transmission folder is present
+      file:
+        path: "/home/{{ user }}/hassio/transmission"
+        state: directory
+        # owner: "{{ user }}"
+        # mode: '0755'
+
     - name: Ensure transmission service is present
       template:
         src: ../config/services/transmission.service
@@ -181,6 +272,13 @@
       notify:
         - systemctl reload config
         - restart plex
+
+    - name: Ensure ledfx folder is present
+      file:
+        path: "/home/{{ user }}/hassio/ledfx"
+        state: directory
+        owner: "{{ user }}"
+        mode: '0755'
 
     - name: Ensure ledfx service is present
       template:
@@ -194,6 +292,13 @@
     #######################################
     ###### Security - Remote Access #######
     #######################################
+    - name: Ensure vaultwarden folder is present
+      file:
+        path: "/home/{{ user }}/hassio/vaultwarden"
+        state: directory
+        owner: "{{ user }}"
+        mode: '0755'
+
     - name: Ensure vaultwarden service is present
       copy:
         src: ../config/services/vaultwarden.service
@@ -202,7 +307,14 @@
       notify:
         - systemctl reload config
         - restart vaultwarden
-    
+
+    - name: Ensure guacamole folder is present
+      file:
+        path: "/home/{{ user }}/hassio/guacamole"
+        state: directory
+        owner: "{{ user }}"
+        mode: '0755'
+
     - name: Ensure guacamole service is present
       template:
         src: ../config/services/guacamole.service
@@ -215,6 +327,16 @@
     #######################################
     ########## Database - Others ##########
     #######################################
+    - name: Ensure mongo folder is present
+      file:
+        path: "/home/{{ user }}/hassio/mongo/{{ item }}"
+        state: directory
+        owner: "{{ user }}"
+        mode: '0755'
+      with_items:
+        - config
+        - data
+
     - name: Ensure mongo service is present
       template:
         src: ../config/services/mongo.service
@@ -232,6 +354,13 @@
       notify:
         - systemctl reload config
         - restart mongo-express
+
+    - name: Ensure mqtt-explorer folder is present
+      file:
+        path: "/home/{{ user }}/hassio/mqtt/explorer"
+        state: directory
+        owner: "{{ user }}"
+        mode: '0755'
 
     - name: Ensure mqtt-explorer service is present
       template:
