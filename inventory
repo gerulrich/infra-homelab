@@ -4,3 +4,4 @@
 [server:vars]
 ansible_user=rock
 ansible_ssh_private_key_file=./keys/rock5b
+secrets_file=secrets.yml

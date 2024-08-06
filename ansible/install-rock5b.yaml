@@ -71,7 +71,7 @@
         state: present    
     
     - name: Copy mpd config file
-      copy:
+      template:
         src: "../config/mpd/mpd.conf"
         dest: "/etc/mpd.conf"
         mode: 0644

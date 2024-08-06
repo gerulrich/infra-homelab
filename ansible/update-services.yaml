@@ -37,28 +37,31 @@
       systemd_service: name=nodered state=restarted scope=user enabled=true
   
     - name: restart esphome
-      systemd_service: name=esphome state=restarded scope=user enabled=true 
+      systemd_service: name=esphome state=restarted scope=user enabled=true 
       
     - name: restart plex
-      systemd_service: name=plex state=restarded scope=user enabled=true
+      systemd_service: name=plex state=restarted scope=user enabled=true
 
     - name: restart ledfx
-      systemd_service: name=ledfx state=restarded scope=user enabled=true
+      systemd_service: name=ledfx state=restarted scope=user enabled=true
+
+    - name: restart photoprism
+      systemd_service: name=photoprism state=restarted scope=user enabled=true
 
     - name: restart vaultwarden
-      systemd_service: name=vaultwarden state=restarded scope=user enabled=true
+      systemd_service: name=vaultwarden state=restarted scope=user enabled=true
 
     - name: restart guacamole
-      systemd_service: name=guacamole state=restarded scope=user enabled=true
+      systemd_service: name=guacamole state=restarted scope=user enabled=true
 
     - name: restart mongo
-      systemd_service: name=mongo state=restarded scope=user enabled=true
+      systemd_service: name=mongo state=restarted scope=user enabled=true
 
     - name: restart mongo-express
-      systemd_service: name=mongo-express state=restarded scope=user enabled=true
+      systemd_service: name=mongo-express state=restarted scope=user enabled=true
 
     - name: restart mqtt-explorer
-      systemd_service: name=mqtt-explorer state=restarded scope=user enabled=false
+      systemd_service: name=mqtt-explorer state=restarted scope=user enabled=false
 
   tasks:
     #######################################
@@ -289,6 +292,15 @@
         - systemctl reload config
         - restart ledfx
 
+    - name: Ensure photoprism service is present
+      template:
+        src: ../config/services/photoprism.service
+        dest: /home/{{ user }}/.config/systemd/user/photoprism.service
+        mode: 0644
+      notify:
+        - systemctl reload config
+        - restart photoprism
+
     #######################################
     ###### Security - Remote Access #######
     #######################################
@@ -300,7 +312,7 @@
         mode: '0755'
 
     - name: Ensure vaultwarden service is present
-      copy:
+      template:
         src: ../config/services/vaultwarden.service
         dest: /home/{{ user }}/.config/systemd/user/vaultwarden.service
         mode: 0644
