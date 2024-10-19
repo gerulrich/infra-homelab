@@ -1,0 +1,42 @@
+name: Build ledfx and push to docker hub
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release version (M.m.p)
+        required: true
+      pushLatest:
+        description: Push the latest tag to docker hub
+        default: false
+        required: true
+        type: boolean
+
+jobs:
+    build:
+      name: push docker image to docker hub
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v2
+
+        - name: login to docker hub
+          id: docker-hub
+          env:
+            username: ${{secrets.DOCKERHUB_USERNAME}}
+            password: ${{secrets.DOCKERHUB_PASSWORD}}
+          run: |
+            docker login -u $username -p $password 
+
+        - name: build the docker image
+          id: build-docker-image
+          run: |
+            cd podman/ledfx && docker build -t gerulrich/ledfx:${{github.event.inputs.version}} .
+
+        - name: push the docker image
+          id: push-docker-image
+          run: docker push ${{secrets.DOCKERHUB_USERNAME}}/demo-image-test:latest
+
+        - name: tag as latest and push
+          if: ${{github.event.inputs.pushLatest}}
+          run: |
+            docker tag gerulrich/ledfx:${{github.event.inputs.version}} gerulrich/ledfx:latest
+            docker push gerulrich/ledfx:latest

@@ -3,5 +3,5 @@
 
 [server:vars]
 ansible_user=rock
-ansible_ssh_private_key_file=./keys/rock5b
+#ansible_ssh_private_key_file=~/ssh-keys/homelab_rock5b
 secrets_file=secrets.yml
