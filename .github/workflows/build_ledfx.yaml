@@ -33,7 +33,7 @@ jobs:
 
         - name: push the docker image
           id: push-docker-image
-          run: docker push ${{secrets.DOCKERHUB_USERNAME}}/demo-image-test:latest
+          run: docker push gerulrich/ledfx:${{github.event.inputs.version}}
 
         - name: tag as latest and push
           if: ${{github.event.inputs.pushLatest}}
