@@ -18,25 +18,21 @@ jobs:
       steps:
         - uses: actions/checkout@v2
 
-        - name: login to docker hub
-          id: docker-hub
-          env:
-            username: ${{secrets.DOCKERHUB_USERNAME}}
-            password: ${{secrets.DOCKERHUB_PASSWORD}}
-          run: |
-            docker login -u $username -p $password 
+        - name: Set up Docker Buildx
+          uses: docker/setup-buildx-action@v1
 
-        - name: build the docker image
-          id: build-docker-image
-          run: |
-            cd podman/ledfx && docker build -t gerulrich/ledfx:${{github.event.inputs.version}} .
+        - name: Log in to Docker Hub
+          uses: docker/login-action@v1
+          with:
+            username: ${{ secrets.DOCKERHUB_USERNAME }}
+            password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
-        - name: push the docker image
-          id: push-docker-image
-          run: docker push gerulrich/ledfx:${{github.event.inputs.version}}
-
-        - name: tag as latest and push
-          if: ${{github.event.inputs.pushLatest}}
-          run: |
-            docker tag gerulrich/ledfx:${{github.event.inputs.version}} gerulrich/ledfx:latest
-            docker push gerulrich/ledfx:latest
+        - name: Build and push Docker image
+          uses: docker/build-push-action@v2
+          with:
+            context: .
+            push: true
+            tags:
+              - gerulrich/ledfx:${{github.event.inputs.version}}
+              - gerulrich/ledfx:latest
+            platforms: linux/amd64,linux/arm64
