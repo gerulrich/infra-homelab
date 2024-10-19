@@ -30,9 +30,10 @@ jobs:
         - name: Build and push Docker image
           uses: docker/build-push-action@v2
           with:
-            context: .
+            context: podman/ledfx
+            file: podman/ledfx/Dockerfile
             push: true
-            tags:
-              - gerulrich/ledfx:${{github.event.inputs.version}}
-              - gerulrich/ledfx:latest
+            tags: |
+              gerulrich/ledfx:${{github.event.inputs.version}},
+              gerulrich/ledfx:latest
             platforms: linux/amd64,linux/arm64
