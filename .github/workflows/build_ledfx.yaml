@@ -33,7 +33,7 @@ jobs:
             context: podman/ledfx
             file: podman/ledfx/Dockerfile
             build-args: |
-              "LEDFX_VERSION=${{github.event.inputs.version}}"
+              LEDFX_VERSION=${{github.event.inputs.version}}
             push: true
             tags: |
               gerulrich/ledfx:${{github.event.inputs.version}},
