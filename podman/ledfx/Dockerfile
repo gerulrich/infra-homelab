@@ -20,7 +20,7 @@ RUN apt-get update && \
 
 RUN pip install numpy wheel
 RUN echo "Installing LedFx version ${LEDFX_VERSION}" && \
-    pip install ledfx==${LEDFX_VERSION}
+    pip install ledfx=="${LEDFX_VERSION}"
 
 VOLUME [ "/config" ]
 
