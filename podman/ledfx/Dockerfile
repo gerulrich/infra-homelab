@@ -1,7 +1,7 @@
 FROM python:bullseye AS builder
 WORKDIR /app
 ARG LEDFX_VERSION
-RUN echo $LEDFX_VERSION && apt-get update && \
+RUN apt-get update && \
  apt-get install -y \
     gcc \
     cmake \
