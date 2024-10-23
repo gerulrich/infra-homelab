@@ -1,6 +1,7 @@
 FROM python:bullseye AS builder
 WORKDIR /app
-
+ARG LEDFX_VERSION
+ENV LEDFX_VERSION ${LEDFX_VERSION}
 RUN apt-get update && \
  apt-get install -y \
     gcc \
@@ -17,7 +18,7 @@ RUN apt-get update && \
     libmbedtls-dev
 
 RUN pip install numpy wheel
-RUN pip install ledfx
+RUN pip install ledfx==${LEDFX_VERSION}
 
 VOLUME [ "/config" ]
 
