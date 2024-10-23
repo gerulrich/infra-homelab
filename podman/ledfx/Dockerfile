@@ -1,4 +1,4 @@
-FROM python:bullseye AS builder
+FROM python:3.13-bullseye AS builder
 WORKDIR /app
 ARG LEDFX_VERSION
 RUN apt-get update && \
