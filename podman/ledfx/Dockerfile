@@ -14,7 +14,7 @@ RUN apt-get update && \
     libavresample-dev \
     libavformat-dev \
     libaubio-dev \
-    libmbedtls-dev \
+    libmbedtls-dev && \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/*
 
