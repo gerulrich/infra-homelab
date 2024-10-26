@@ -1,6 +1,6 @@
-FROM python:bullseye AS builder
+FROM python:3.12-bullseye AS builder
 WORKDIR /app
-
+ARG LEDFX_VERSION
 RUN apt-get update && \
  apt-get install -y \
     gcc \
@@ -14,10 +14,13 @@ RUN apt-get update && \
     libavresample-dev \
     libavformat-dev \
     libaubio-dev \
-    libmbedtls-dev
+    libmbedtls-dev && \
+  apt-get clean && \
+  rm -rf /var/lib/apt/lists/*
 
 RUN pip install numpy wheel
-RUN pip install ledfx
+RUN echo "Installing LedFx version ${LEDFX_VERSION}" && \
+    pip install ledfx=="${LEDFX_VERSION}"
 
 VOLUME [ "/config" ]
 
