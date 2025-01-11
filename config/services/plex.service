@@ -9,7 +9,8 @@ RequiresMountsFor=%t/containers
 Environment=PODMAN_SYSTEMD_UNIT=%n TZ=America/Argentina/Buenos_Aires
 Restart=always
 TimeoutStopSec=70
-ExecStart=/usr/local/bin/podman run --group-add keep-groups --name=plex \
+ExecStart=/usr/local/bin/podman run \
+  --name=plex \
   --cidfile=%t/%n.ctr-id \
   --cgroups=no-conmon \
   --sdnotify=conmon \

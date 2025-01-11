@@ -1,3 +1,2 @@
 #!/bin/bash
-#Transmission donwload finished script
-mqtt_send.sh "/torrent" "$TR_TORRENT_NAME"
+curl {{ torrent_notify_url }}/refresh-torrent?torrent="$TR_TORRENT_NAME"

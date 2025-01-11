@@ -10,7 +10,6 @@ Environment=PODMAN_SYSTEMD_UNIT=%n TZ=America/Argentina/Buenos_Aires
 Restart=on-failure
 TimeoutStopSec=70
 ExecStart=/usr/local/bin/podman run --name=transmission \
-  --group-add keep-groups \
   --cidfile=%t/%n.ctr-id \
   --cgroups=no-conmon \
   --sdnotify=conmon \
@@ -21,8 +20,11 @@ ExecStart=/usr/local/bin/podman run --name=transmission \
   --label "io.containers.autoupdate=registry" \
   -v /home/{{ user }}/hassio/transmission:/config \
   -v /home/{{ user }}/media:/downloads \
+  -v /home/{{ user }}/bin/torrent-download-finished.sh:/bin/torrent-download-finished.sh \
+  -v /home/{{ user }}/hassio/transmission/10-cleanup:/custom-cont-init.d/10-cleanup:ro \
   -e TZ=America/Argentina/Buenos_Aires \
-  lscr.io/linuxserver/transmission
+  -e PUID=0 -e PGID=0 \
+  lscr.io/linuxserver/transmission:4.0.5
 ExecStop=/usr/local/bin/podman stop --ignore -t 10 --cidfile=%t/%n.ctr-id
 ExecStopPost=/usr/local/bin/podman rm -f --ignore -t 10 --cidfile=%t/%n.ctr-id
 Type=notify

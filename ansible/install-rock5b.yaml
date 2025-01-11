@@ -6,6 +6,7 @@
     time_zone: 'America/Argentina/Buenos_Aires'
     user: rock
     home_disk: bd84725a-c54e-4980-9bd7-98106b5b45b0
+    torrent_notify_url: http://192.168.0.10:1880
   vars_files:
     - ../secrets.yml
   
@@ -149,19 +150,30 @@
           dest: /home/{{ user }}/bin/flash-zigbee-dongle.sh
         - src: ../scripts/tools/rock5b-info.sh
           dest: /home/{{ user }}/bin/system-info.sh
-        - src: ../scripts/tools/mqtt-send.sh
-          dest: /home/{{ user }}/bin/mqtt-send.sh
-        - src: ../scripts/tools/torrent-download-finished.sh
-          dest: /home/{{ user }}/bin/torrent-download-finished.sh
 
-    - name: Copy mqtt-send.sh file with pass
+    - name: Ensuse torrent-download-finished.sh script is copied
+      template:
+        src: ../scripts/tools/torrent-download-finished.sh
+        dest: /home/{{ user }}/bin/torrent-download-finished.sh
+        mode: 0744
+    
+    - name: Ensuse mqtt-send.sh script is copied
       template:
         src: ../scripts/tools/mqtt-send.sh
         dest: /home/{{ user }}/bin/mqtt-send.sh
+        mode: 0744
+
+    - name: Ensure snd_aloop module is configured
+      copy:
+        content: |
+          options snd_aloop index=5 pcm_substreams=1 id="LedFxIO" enable=1
+        dest: "/etc/modprobe.d/snd_aloop.conf"
         mode: 0644
 
-      # TODO
-      # enable linger
-      # install ffmpeg with rkmpp
-      # Fan control
-      # systemd-resolved, dns etc.
+      # TODO :
+      # - enable linger
+      # - install ffmpeg with rkmpp
+      # - fan control (adjust fan speed)
+      # - systemd-resolved, dns etc.
+      # - sudo adduser mpd pulse
+      # - sudo adduser mpd pulse-access
