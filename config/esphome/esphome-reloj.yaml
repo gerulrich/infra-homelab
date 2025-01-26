@@ -1,0 +1,462 @@
+esphome:
+  name: "esphome-reloj"
+  friendly_name: reloj
+  on_boot:
+    priority: 600
+    then:
+      - switch.turn_on: rc522_switch
+      - switch.turn_on: screen_switch      
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: !secret reloj_hassio_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+switch:
+  - platform: gpio
+    pin: GPIO2
+    name: "Wemos LED"
+  #  inverted: true
+  - platform: gpio
+    id: rc522_switch
+    pin: GPIO27
+    name: "RC522"
+    # inverted: true
+  - platform: template
+    name: "Pantalla"
+    id: screen_switch
+    optimistic: true
+
+wifi:
+  id: wifi_id
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  manual_ip:
+    static_ip: 192.168.0.140
+    gateway: 192.168.0.1
+    subnet: 255.255.255.0
+
+time:
+  - platform: homeassistant
+    id: esptime
+    timezone: "America/Argentina/Buenos_Aires"
+    # on_time_sync:
+    #  then:
+    #    - display.page.show: !lambda |-
+    #        id(current_mode) = "clock";
+    #        return id(clock_page);
+    #    - switch.turn_on: template_swi
+
+globals:
+  - id: song_title
+    type: std::string
+    restore_value: no
+    initial_value: ""
+  - id: track_format
+    type: std::string
+    restore_value: no
+    initial_value: ""
+  - id: cd_number
+    type: std::string
+    restore_value: no
+    initial_value: ""
+  - id: track
+    type: std::string
+    restore_value: no
+    initial_value: ""
+  - id: track_total
+    type: std::string
+    restore_value: no
+    initial_value: ""  
+  - id: track_duration
+    type: float
+    restore_value: no
+    initial_value: ""
+  - id: track_elapsed
+    type: float
+    restore_value: no
+    initial_value: ""
+  - id: album
+    type: std::string
+    restore_value: no
+    initial_value: ""
+  - id: artist
+    type: std::string
+    restore_value: no
+    initial_value: ""
+  - id: state
+    type: std::string
+    restore_value: no
+    initial_value: ""
+  - id: current_mode
+    type: std::string
+    restore_value: no
+    initial_value: ""
+  - id: posX
+    type: int
+    restore_value: no
+    initial_value: '128'
+  - id: minX
+    type: int
+    restore_value: no
+    initial_value: '0'
+  - id: last_time
+    type: unsigned int
+    restore_value: no
+    initial_value: '0'
+
+# Example configuration entry
+# button:
+#  - platform: factory_reset
+#    name: Restart with Factory Default Settings
+
+text_sensor:
+  - platform: homeassistant
+    name: weather
+    entity_id: weather.forecast_home
+    id: weather
+  - platform: homeassistant
+    name: sun
+    entity_id: sun.sun
+    id: sun
+
+# Example configuration entry with 2 sensors and filter
+sensor:
+  - platform: wifi_signal # Reports the WiFi signal strength/RSSI in dB
+    name: "WiFi Signal dB"
+    id: wifi_signal_db
+    update_interval: 60s
+    entity_category: "diagnostic"
+
+  - platform: copy # Reports the WiFi signal strength in %
+    source_id: wifi_signal_db
+    name: "WiFi Signal Percent"
+    filters:
+      - lambda: return min(max(2 * (x + 100.0), 0.0), 100.0);
+    unit_of_measurement: "Signal %"
+    entity_category: "diagnostic"
+
+  - platform: homeassistant
+    id: inside_temperature
+    entity_id: sensor.comedor_temperature
+    internal: true
+    
+  - platform: homeassistant
+    id: inside_humidity
+    entity_id: sensor.comedor_humidity
+    internal: true
+
+e131:
+  method: multicast
+
+light:
+  - platform: neopixelbus
+    id: light_1
+    type: GRB
+    variant: WS2812
+    pin: GPIO32
+    num_leds: 82
+    name: "Led"
+    effects:
+      - e131:
+          name: 'LedFx'
+          universe: 1
+          channels: RGB
+      - addressable_fireworks:
+          name: Fireworks Effect
+          update_interval: 32ms
+          spark_probability: 60%
+          use_random_color: false
+          fade_out_rate: 120
+      - addressable_rainbow:
+
+i2c:
+  scl: GPIO23
+  sda: GPIO19  
+  scan: false
+  frequency: 800kHz
+
+spi:
+  clk_pin: GPIO14
+  mosi_pin: GPIO13
+  miso_pin: GPIO5
+
+rc522_spi:
+  cs_pin: GPIO17
+  reset_pin: GPIO16
+  update_interval: 1s
+  on_tag:
+    then:
+      - mqtt.publish:
+          topic: /mpd/command
+          payload: !lambda |-
+            return "{\"command\": \"play_album\", \"value\": \"" + x + "\"}";
+      - light.turn_off:
+          id: light_1
+      - light.turn_on:
+          id: light_1
+          brightness: 50%
+          red: 0%
+          green: 100%
+          blue: 0%
+          flash_length: 300ms
+      - delay: 300ms
+      - light.turn_off: 
+          id: light_1
+          transition_length: 0ms
+      - delay: 500ms
+      #- light.turn_on:
+      #    id: light_1
+      #    effect: "LedFx"
+
+font:
+  - file: 'fonts/slkscr.ttf'
+    id: tiny_font
+    size: 8
+  
+  - file: 'gfonts://IBM Plex Mono'
+    id: small_font
+    size: 12
+    glyphs: ['!','"','%','(',')','+','=','''',',','-','_','.',':','°','|','0','1',
+    '2','3','4','5','6','7','8','9','A','B','C','D','E','F','G','H','I','J','K',
+    'L','M','N','Ñ','O','P','Q','R','S','T','U','V','W','X','Y','Z',' ','a','b','c',
+    'd','e','f','g','h','i','j','k','l','m','n','ñ','o','p','q','r','s','t','u','v',
+    'w','x','y','z','á','é','í','ó', 'ú', 'Á', 'É', 'Í', 'Ó', 'Ú', '¿', '?', '&', '/']
+  
+  - file: 'fonts/BebasNeue-Regular.ttf'
+    id: big_font
+    size: 48
+    glyphs: [':','0','1','2','3','4','5','6','7','8','9']
+  
+  - file: "fonts/materialdesignicons-webfont.ttf"
+    id: weather_icon
+    size: 25
+    glyphs: [
+      "󰖙", # mdi-weather-sunny
+      "󰖔", # mdi-weather-night
+      "󰖐", # mdi-weather-cloudy
+      "󰖖", # mdi-weather-pouring
+      "󰙿", # mdi-weather-snowy-rainy
+      "󰼶", # mdi-weather-snowy-heavy
+      "󰖞", # mdi-weather-windy-variant
+      "󰖑", # mdi-weather-fog
+      "󰖕", # mdi-weather-partly-cloudy
+      "󰼱", # mdi-weather-night-partly-cloudy
+      "󰖗", # mdi-weather-rainy
+      "󰖒", # mdi-weather-hail
+      "󰖘", # mdi-weather-snowy
+      "󰖝", # mdi-weather-windy
+      "󰖓", # mdi-weather-lightning
+      "󰙾", # mdi-weather-lightning-rainy
+    ]
+
+  - file: "fonts/materialdesignicons-webfont.ttf"
+    id: network_icon
+    size: 12
+    glyphs: [
+      "󰖩", # wifi
+      "󰖪", # no wifi
+    ]
+    
+  - file: "fonts/materialdesignicons-webfont.ttf"
+    id: icon_font
+    size: 32
+    glyphs: [
+      '󰟐', # home assistant
+      '󰏤', # pause
+      '󰐊', # play
+    ]
+
+  - file: "fonts/BebasNeue-Regular.ttf"
+    id: medium_font
+    size: 34
+    glyphs: [':','0','1','2','3','4','5','6','7','8','9']
+
+
+display:
+  - platform: ssd1306_i2c
+    id: pantalla_reloj
+    model: "SSD1306 128x64"
+    external_vcc: False
+    # update_interval: 2s
+    # reset_pin: D0
+    address: 0x3C
+    pages:
+      - id: loading_page
+        lambda: |-
+          if (!id(screen_switch).state) {
+            return;
+          }
+          if (!id(wifi_id).is_connected()) {
+            it.printf(64, 0, id(small_font), TextAlign::TOP_CENTER, "Iniciando");
+            it.printf(0, 20, id(network_icon),  TextAlign::BASELINE_RIGHT, "󰖪");
+            return;
+          }
+
+          it.printf(127, 10, id(network_icon),  TextAlign::BASELINE_RIGHT, "󰖩");
+          
+          // it.printf(64, 0, id(small_font), TextAlign::TOP_CENTER, "Conectado");
+          if (!id(esptime).is_failed()) {
+            it.strftime(0, 60, id(big_font), TextAlign::BASELINE_LEFT, "%H:%M", id(esptime).now()); // Print time in HH:MM format
+          }
+          if (id(weather).has_state()) {
+            std::map<std::string, std::string> weather_state {
+              {"sunny", "󰖙" }, // # mdi-weather-sunny
+              {"night", "󰖔" }, // # mdi-weather-night
+              {"cloudy", "󰖐" }, // # mdi-weather-cloudy
+              {"pouring", "󰖖" }, // # mdi-weather-pouring
+              {"snowyrainy", "󰙿" }, // # mdi-weather-snowy-rainy
+              {"snowyheavy", "󰼶" }, // # mdi-weather-snowy-heavy
+              {"windyvariant", "󰖞" }, // # mdi-weather-windy-variant
+              {"fog", "󰖑" }, // # mdi-weather-fog
+              {"partlycloudy", "󰖕" }, // # mdi-weather-partly-cloudy
+              {"nightpartlycloudy", "󰼱" }, // # mdi-weather-night-partly-cloudy
+              {"rainy", "󰖗" }, // # mdi-weather-rainy
+              {"hail", "󰖒" }, // # mdi-weather-hail
+              {"snowy", "󰖘" }, // # mdi-weather-snowy
+              {"windy", "󰖝" }, // # mdi-weather-windy
+              {"lightning", "󰖓" }, // # mdi-weather-lightning
+              {"lightningrainy", "󰙾" }, // # mdi-weather-lightning-rainy
+            };
+            if (weather_state.count(id(weather).state.c_str() )) {
+              std::string ws = id(weather).state;
+              std::string sun_state = std::string(id(sun).state);
+              if (ws == "sunny" && sun_state == "below_horizon") {
+                ws = "night";
+              }
+              if (ws == "partlycloudy" && sun_state == "below_horizon") {
+                ws = "nightpartlycloudy";
+              }
+              it.printf(0, 20, id(weather_icon),  TextAlign::BASELINE_LEFT, weather_state[ws.c_str()].c_str());
+            }
+            it.printf(127, 32, id(tiny_font), TextAlign::BASELINE_RIGHT, "Comedor");
+            it.strftime(0, 60, id(big_font), TextAlign::BASELINE_LEFT, "%H:%M", id(esptime).now()); // Print time in HH:MM format
+            if (id(inside_temperature).has_state() && id(inside_humidity).has_state()) { 
+              it.printf(127, 46, id(small_font), TextAlign::BASELINE_RIGHT , "%.1f°", id(inside_temperature).state);   // Print temperature
+              it.printf(127, 60, id(small_font), TextAlign::BASELINE_RIGHT , "%.1f%%", id(inside_humidity).state);// Print humidity
+            }
+          }
+
+      - id: player_page
+        lambda: |-
+          if (!id(screen_switch).state) {
+            return;
+          }
+          
+          int w = id(track_format).length() == 3 ? (id(track_format).length()*6+3) : (id(track_format).length()*6+1);
+          it.rectangle(0, 0, w, 9);
+          it.printf(1, 7, id(tiny_font), TextAlign::BASELINE_LEFT, id(track_format).c_str()); // Formaro MP3, FLAC, etc            
+            
+          if (!id(cd_number).empty()) {
+            it.rectangle(w + 2, 0, id(cd_number).length()*6+2, 9);
+            it.printf(w + 3, 7, id(tiny_font), TextAlign::BASELINE_LEFT , id(cd_number).c_str());   // CD Number CD1, CD2 etc
+          }  
+            
+          std::string printout=id(song_title); // + " - " + id(album) + " - " + id(artist);
+          id(minX) = -7 * printout.length(); // (pixels/character) * characters = length in pixels
+          it.printf(id(posX), 24, id(small_font), TextAlign::BASELINE_LEFT, printout.c_str());
+            
+          // Track number | total
+          it.printf(127, 27, id(small_font), TextAlign::TOP_RIGHT , "%02d|%02d", atoi(id(track).c_str()), atoi(id(track_total).c_str()));
+            
+          // TODO se puede calcular cuando llega el mensaje
+          int minutes = (((int)id(track_duration)) % 3600) / 60;
+          int seconds = (((int)id(track_duration)) % 3600) % 60;
+          it.printf(127, 54, id(small_font), TextAlign::BASELINE_RIGHT , "%02d:%02d", minutes, seconds);// Total time
+            
+          // Progress bar
+          it.rectangle(3, 59, 124, 4);
+
+          float duration = id(track_duration);
+          if (id(state) == "play" && duration > 0) {
+            it.printf(-5, 60, id(icon_font), TextAlign::BOTTOM_LEFT, "󰐊"); // play icon
+              
+            float real_elapsed = id(track_elapsed) + ( id(esptime).now().timestamp - id(last_time));
+            // TODO verificar que el elapsed time < duration
+              
+            float progreso = real_elapsed / duration;
+            int pixels = progreso * 124;
+            it.filled_rectangle(3, 59, pixels, 4);
+
+            int m = (((int)real_elapsed) % 3600) / 60;
+            int s = (((int)real_elapsed) % 3600) % 60;
+
+            it.printf(26, 54, id(medium_font), TextAlign::BASELINE_LEFT, "%02d:%02d", m, s); // Current Time
+              
+          }
+
+          if (id(state) == "pause" && duration > 0) {
+            it.printf(-5, 60, id(icon_font), TextAlign::BOTTOM_LEFT, "󰏤"); // pause icon
+            float real_elapsed = id(track_elapsed);
+            float progreso = real_elapsed / duration;
+            int pixels = progreso * 124;
+            it.filled_rectangle(3, 59, pixels, 4);
+
+            int m = (((int)real_elapsed) % 3600) / 60;
+            int s = (((int)real_elapsed) % 3600) % 60;
+
+            it.printf(26, 54, id(medium_font), TextAlign::BASELINE_LEFT, "%02d:%02d", m, s); // Current Time
+          }
+
+          id(posX) = id(posX) - 2; // scroll speed
+          if (id(posX) < id(minX)) id(posX) = 128;
+
+mqtt:
+  id: mqtt_client
+  broker: 192.168.0.10
+  port: 1883
+  client_id: 'radioreloj'
+  username: !secret mqtt_user
+  password: !secret mqtt_pass
+  discovery: false
+  on_json_message:
+    topic: /mpd/status
+    then:
+      - lambda: |-
+          id(song_title) = std::string((const char*)(x["title"])) + " - " + std::string((const char*)(x["album"])) + " - " + std::string((const char*)(x["artist"]));
+          id(state) = std::string((const char*)(x["state"]));
+          if (id(state) != "stop") {
+            id(track) = std::string((const char*)(x["track"]));
+            id(track_total) = std::string((const char*)(x["track_total"]));
+            id(track_format) = std::string((const char*)(x["format"]));
+            id(cd_number) = std::string((const char*)(x["cd_nro"]));
+            id(track_duration) = atof(x["duration"]);
+            id(track_elapsed) = atof(x["elapsed"]);
+          } else {
+            id(track) = "0";
+            id(track_total) = "0";
+            id(track_format) = "";
+            id(cd_number) = "";
+            id(track_duration) = 0;
+            id(track_elapsed) = 0;
+          }
+          ESP_LOGD("main", "MPD song title is %s", id(song_title).c_str());
+          ESP_LOGD("main", "MPD state is %s", id(state).c_str());
+          id(last_time) = id(esptime).now().timestamp;
+      - display.page.show: !lambda |-
+          if (id(state) == "stop") {
+            id(current_mode) = "clock";
+            return id(loading_page);
+          } else {
+            id(current_mode) = "player";
+            return id(player_page);
+          }
+      - component.update: pantalla_reloj
+  on_connect:
+    #- logger.log: "MQTT connected, sending status command"
+    - mqtt.publish:
+        topic: /mpd/command
+        payload: !lambda |-
+          return "{\"command\": \"status\"}";
