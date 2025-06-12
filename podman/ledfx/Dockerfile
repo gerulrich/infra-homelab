@@ -1,4 +1,4 @@
-FROM python:3.12-bullseye AS builder
+FROM python:3.12-bookworm AS builder
 WORKDIR /app
 ARG LEDFX_VERSION
 RUN apt-get update && \
@@ -7,11 +7,8 @@ RUN apt-get update && \
     cmake \
     make \
     libatlas3-base \
-    libavformat58 \
+    libavformat59 \
     portaudio19-dev \
-    avahi-daemon alsa-utils \
-    libavcodec-dev \
-    libavresample-dev \
     libavformat-dev \
     libaubio-dev \
     libmbedtls-dev && \
