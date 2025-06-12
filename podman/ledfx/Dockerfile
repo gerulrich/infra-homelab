@@ -22,7 +22,19 @@ RUN pip install numpy wheel
 RUN echo "Installing LedFx version ${LEDFX_VERSION}" && \
     pip install ledfx=="${LEDFX_VERSION}"
 
+FROM python:3.12-slim AS final
 WORKDIR /app
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        pulseaudio \
+        libatlas3-base \
+        portaudio19-dev \
+        libaubio5 \
+        libmbedtls14 && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /install /usr/local
 COPY startup.sh .
 VOLUME [ "/config" ]
 
