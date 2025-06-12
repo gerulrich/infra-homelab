@@ -34,7 +34,7 @@ RUN apt-get update && \
         libmbedtls14 && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /install /usr/local
+COPY --from=builder /usr/local /usr/local
 COPY startup.sh .
 VOLUME [ "/config" ]
 
