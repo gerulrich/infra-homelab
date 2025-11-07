@@ -19,7 +19,7 @@ RUN pip install numpy wheel
 RUN echo "Installing LedFx version ${LEDFX_VERSION}" && \
     pip install ledfx=="${LEDFX_VERSION}"
 
-FROM python:3.12-slim AS final
+FROM python:3.12-slim-bookworm AS final
 WORKDIR /app
 
 RUN apt-get update && \
